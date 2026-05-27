@@ -166,6 +166,10 @@ namespace ComboArena.Controller
         private void ProcessCollisions()
         {
             if (!Player.IsAlive) return;
+            
+            // Сначала собираем дропы, чтобы новые дропы не были подобраны в том же кадре
+            CollectDrops();
+            
             foreach (var enemy in Enemies)
             {
                 var collides = enemy.CollidesWith(Player);
@@ -177,20 +181,28 @@ namespace ComboArena.Controller
             }
             if (Player.IsAttacking)
             {
-                foreach (var enemy in Enemies)
+                for (var i = Enemies.Count - 1; i >= 0; i--)
                 {
+                    var enemy = Enemies[i];
                     // проверяем попадание в дугу атаки
                     if (!Player.IsInAttackArc(enemy)) continue;
                     var damage = Player.AttackDamage * Player.GetComboBonusDamage(1f);
                     enemy.TakeDamage(damage);
                     _eventBus.Publish(new AttackEvent(Player, enemy, damage));
                     if (enemy.IsAlive) continue;
+                    CreateDrop(enemy.Position, enemy.ExperienceReward);
                     Player.AddExperience(enemy.ExperienceReward * Player.GetComboBonusExperience(1f));
                     Player.AddCombo();
                     Player.HealOnKill();
+                    Enemies.RemoveAt(i);
+                    _entities.Remove(enemy);
                 }
                 Player.ResetAttackCooldown();
             }
+        }
+        
+        private void CollectDrops()
+        {
             for (var i = DropItems.Count - 1; i >= 0; i--)
             {
                 var drop = DropItems[i];

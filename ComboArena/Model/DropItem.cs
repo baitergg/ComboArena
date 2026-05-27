@@ -33,7 +33,7 @@ namespace ComboArena.Model
         }
         public bool CollidesWith(Entity entity)
         {
-            return GetBounds().Intersects(entity.GetBounds());
+            return GetBounds().Intersects(entity.GetCollisionBounds());
         }
         public void Collect(Player player)
         {
