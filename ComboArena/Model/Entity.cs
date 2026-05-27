@@ -1,18 +1,18 @@
-using Microsoft.Xna.Framework;
-
+﻿using Microsoft.Xna.Framework;
 namespace ComboArena.Model
 {
     public abstract class Entity
     {
-        public Vector2 Position { get; set; }
-        public Vector2 Velocity { get; set; }
+        public Vector2 Position { get; private set; }
         public float Health { get; set; }
-        public float MaxHealth { get; set; }
-        public float Speed { get; set; }
-        public float Width { get; set; }
-        public float Height { get; set; }
+        public float MaxHealth { get; protected set; }
+        public float Width { get; }
+        public float Height { get; }
         public bool IsAlive => Health > 0;
-
+        protected Vector2 Velocity { get; set; }
+        protected float Speed { get; set; }
+        protected float CollisionScale { get; set; } = 0.3f;
+        
         protected Entity(float x, float y, float width, float height, float maxHealth, float speed)
         {
             Position = new Vector2(x, y);
@@ -23,30 +23,34 @@ namespace ComboArena.Model
             Health = maxHealth;
             Speed = speed;
         }
-
         public virtual void Update(GameTime gameTime)
         {
             if (!IsAlive) return;
-            
             var delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
             Position += Velocity * delta;
         }
-
         public virtual void TakeDamage(float damage)
         {
             var oldHealth = Health;
             Health -= damage;
             if (Health < 0) Health = 0;
         }
-
         public Rectangle GetBounds()
         {
             return new Rectangle((int)Position.X, (int)Position.Y, (int)Width, (int)Height);
         }
-
+        public Rectangle GetCollisionBounds()
+        {
+            var scaledWidth = Width * CollisionScale;
+            var scaledHeight = Height * CollisionScale;
+            var offsetX = (Width - scaledWidth) / 2;
+            var offsetY = (Height - scaledHeight) / 2;
+            return new Rectangle((int)(Position.X + offsetX), (int)(Position.Y + offsetY),
+                                 (int)scaledWidth, (int)scaledHeight);
+        }
         public bool CollidesWith(Entity other)
         {
-            return GetBounds().Intersects(other.GetBounds());
+            return GetCollisionBounds().Intersects(other.GetCollisionBounds());
         }
     }
 }
