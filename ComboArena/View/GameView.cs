@@ -16,48 +16,46 @@ namespace ComboArena.View
     /// </summary>
     public class GameView
     {
-        /// <summary>Игрок - главный управляемый персонаж.</summary>
         private readonly Player _player;
 
-        /// <summary>Список всех активных врагов на карте (ссылка на список из Controller).</summary>
         private readonly List<Enemy> _enemies;
 
-        /// <summary>Список выпавших предметов (ссылка на список из Controller).</summary>
         private readonly List<DropItem> _dropItems;
 
-        /// <summary>Список предлагаемых перков (ссылка на список из Controller).</summary>
         private readonly List<Perk> _offeredPerks;
 
-        /// <summary>true, если игрок в настоящий момент выбирает перк.</summary>
         private bool _isChoosingPerk;
 
-        /// <summary>Отображение игрока.</summary>
         private PlayerView _playerView;
 
-        /// <summary>Словарь отображений врагов по типу.</summary>
         private Dictionary<EnemyType, EnemyView> _enemyViews;
 
-        /// <summary>Шрифт для отрисовки текста.</summary>
         private SpriteFont _font;
 
-        /// <summary>Белая текстура 1x1 для рисования прямоугольников и линий.</summary>
         private Texture2D _pixelTexture;
 
-        /// <summary>Текстура сферы опыта.</summary>
         private Texture2D _expTexture;
 
-        /// <summary>Текстура сердца (здоровье).</summary>
         private Texture2D _heartTexture;
 
-        /// <summary>Текстура атаки вправо.</summary>
         private Texture2D _attackTextureRight;
 
-        /// <summary>Текстура атаки влево.</summary>
         private Texture2D _attackTextureLeft;
+
+        // Таймеры для визуальных эффектов
+        private float _healthFlashTimer;
+        private const float HealthFlashDuration = 0.3f;
+
+        private float _damageFlashTimer;
+        private const float DamageFlashDuration = 1f;
+
+        private float _comboPulseTimer;
+        private const float ComboPulseDuration = 0.2f;
+        private int _lastComboCount;
+
+        private float _levelUpTimer;
+        private const float LevelUpDuration = 2f;
         
-        /// <summary>
-        /// Создаёт объект отрисовки игры.
-        /// </summary>
         public GameView(Player player, List<Enemy> enemies, List<DropItem> dropItems, List<Perk> offeredPerks)
         {
             _player = player;
@@ -66,13 +64,13 @@ namespace ComboArena.View
             _offeredPerks = offeredPerks;
             _enemyViews = new Dictionary<EnemyType, EnemyView>();
 
-            // Подписка на событие выбора перка
+            // Подписки на события
             EventBus.Instance.Subscribe("PerkSelection", OnPerkSelection);
+            EventBus.Instance.Subscribe("HealthChanged", OnHealthChanged);
+            EventBus.Instance.Subscribe("Combo", OnComboChanged);
+            EventBus.Instance.Subscribe("LevelUp", OnLevelUp);
         }
 
-        /// <summary>
-        /// Загружает все текстуры и шрифты, необходимые для отрисовки.
-        /// </summary>
         public void LoadContent(GraphicsDevice graphicsDevice, SpriteFont font = null, ContentManager content = null)
         {
             _playerView = new PlayerView();
@@ -95,14 +93,17 @@ namespace ComboArena.View
             _attackTextureLeft = content.Load<Texture2D>("attack_left");
         }
 
-        /// <summary>
-        /// Рисует все игровые объекты в мировых координатах:
-        /// игрока, врагов, лазеры, атаку, дроп и эффекты способностей.
-        /// </summary>
         public void Draw(SpriteBatch spriteBatch, GameTime gameTime)
         {
             if (_playerView == null || _player == null)
                 return;
+
+            // Обновление таймеров визуальных эффектов
+            var delta = (float)gameTime.ElapsedGameTime.TotalSeconds;
+            if (_healthFlashTimer > 0) _healthFlashTimer -= delta;
+            if (_damageFlashTimer > 0) _damageFlashTimer -= delta;
+            if (_comboPulseTimer > 0) _comboPulseTimer -= delta;
+            if (_levelUpTimer > 0) _levelUpTimer -= delta;
 
             _playerView.Draw(spriteBatch, _player);
 
@@ -129,9 +130,6 @@ namespace ComboArena.View
             DrawAbilityEffects(spriteBatch);
         }
 
-        /// <summary>
-        /// Рисует лазерные лучи всех Yellow-врагов.
-        /// </summary>
         private void DrawLaserAttacks(SpriteBatch spriteBatch)
         {
             foreach (var enemy in _enemies)
@@ -148,9 +146,6 @@ namespace ComboArena.View
             }
         }
 
-        /// <summary>
-        /// Рисует один лазерный луч с эффектами свечения.
-        /// </summary>
         private void DrawLaserBeam(SpriteBatch spriteBatch, Vector2 start, Vector2 end, float animationTimer)
         {
             var direction = end - start;
@@ -173,9 +168,6 @@ namespace ComboArena.View
             DrawLine(spriteBatch, start, end, thickness * 0.3f, coreColor);
         }
 
-        /// <summary>
-        /// Рисует линию произвольной толщины и цвета.
-        /// </summary>
         private void DrawLine(SpriteBatch spriteBatch, Vector2 start, Vector2 end, float thickness, Color color)
         {
             var direction = end - start;
@@ -198,19 +190,14 @@ namespace ComboArena.View
                 new Vector2(0, 0.5f), SpriteEffects.None, 0);
         }
         
-        /// <summary>
-        /// Рисует визуальные эффекты активных способностей:
-        /// огненный взрыв (FireBurst) и щит (Barrier).
-        /// </summary>
         private void DrawAbilityEffects(SpriteBatch spriteBatch)
         {
-            var player = _player;
-            if (player.Ability == null) return;
+            if (_player.Ability == null) return;
 
-            var playerCenter = player.Position + new Vector2(player.Width / 2, player.Height / 2);
+            var playerCenter = _player.Position + new Vector2(_player.Width / 2, _player.Height / 2);
 
             // Эффект огненного взрыва
-            if (player.Ability is FireBurst fireBurst && fireBurst.AnimationTimer > 0)
+            if (_player.Ability is FireBurst fireBurst && fireBurst.AnimationTimer > 0)
             {
                 var progress = 1f - (fireBurst.AnimationTimer / 0.4f);
                 var currentRadius = fireBurst.Radius * progress;
@@ -226,10 +213,10 @@ namespace ComboArena.View
             }
 
             // Эффект щита
-            if (player.Ability is Barrier barrier && barrier.IsBarrierActive)
+            if (_player.Ability is Barrier barrier && barrier.IsBarrierActive)
             {
                 var pulse = 0.8f + (float)Math.Sin(barrier.Timer * 15) * 0.2f;
-                var shieldRadius = Math.Max(player.Width, player.Height) * 0.7f;
+                var shieldRadius = Math.Max(_player.Width, _player.Height) * 0.7f;
 
                 DrawBurstRing(spriteBatch, playerCenter, shieldRadius + 8, 5f,
                     Color.Cyan * (0.2f * pulse));
@@ -242,13 +229,10 @@ namespace ComboArena.View
             }
         }
 
-        /// <summary>
-        /// Рисует кольцо из отрезков с заданными параметрами.
-        /// </summary>
         private void DrawBurstRing(SpriteBatch spriteBatch, Vector2 center, float radius, float thickness, Color color)
         {
             const int segments = 32;
-            var step = Math.PI * 2 / segments;
+            const double step = Math.PI * 2 / segments;
 
             for (var i = 0; i < segments; i++)
             {
@@ -266,12 +250,8 @@ namespace ComboArena.View
                     thickness, color);
             }
         }
-        
-        /// <summary>
-        /// Рисует все выпавшие предметы (сферы опыта и сердца).
-        /// Предметы пульсируют с течением времени.
-        /// </summary>
-        public void DrawDrops(SpriteBatch spriteBatch, GameTime gameTime)
+
+        private void DrawDrops(SpriteBatch spriteBatch, GameTime gameTime)
         {
             var time = (float)gameTime.TotalGameTime.TotalSeconds;
 
@@ -286,19 +266,24 @@ namespace ComboArena.View
                 var pulse = (float)(Math.Sin(time * 5 + drop.Position.X * 0.1f) * 0.2 + 0.8);
                 var pulseColor = Color.White * pulse;
 
-                Texture2D texture = drop.Type == DropType.Experience ? _expTexture : _heartTexture;
+                var texture = drop.Type == DropType.Experience ? _expTexture : _heartTexture;
                 spriteBatch.Draw(texture, rect, pulseColor);
             }
         }
 
-        /// <summary>
-        /// Рисует пользовательский интерфейс: HUD, полоски здоровья/опыта,
-        /// информацию о комбо, активных перках, счётчик врагов и панель способности.
-        /// Если игрок выбирает перк — отображает экран выбора перков.
-        /// </summary>
         public void DrawUI(SpriteBatch spriteBatch)
         {
             if (_font == null) return;
+
+            // Красная вспышка на весь экран при получении урона
+            if (_damageFlashTimer > 0)
+            {
+                var flashAlpha = (_damageFlashTimer / DamageFlashDuration) * 0.3f;
+                var vp = spriteBatch.GraphicsDevice.Viewport;
+                spriteBatch.Draw(_pixelTexture,
+                    new Rectangle(0, 0, vp.Width, vp.Height),
+                    Color.Red * flashAlpha);
+            }
 
             if (_isChoosingPerk)
             {
@@ -306,54 +291,91 @@ namespace ComboArena.View
                 return;
             }
 
-            var player = _player;
             var viewport = spriteBatch.GraphicsDevice.Viewport;
 
+            // Расчёт высоты фона HUD в зависимости от контента
+            const int baseHeight = 115; // HP (35) + Level (20) + XP (20) + XP bar (10) + отступ
+            var comboHeight = _player.ComboCount > 0 ? 75 : 0; // Комбо-секция
+            var perkCount = Math.Min(_player.ActivePerks.Count, 5);
+            var perksHeight = perkCount > 0 ? 20 + perkCount * 18 + 10 : 0; // Заголовок + перки + отступ
+            var totalHeight = baseHeight + comboHeight + perksHeight;
+
             // Фон панели HUD
-            var uiBackground = new Rectangle(5, 5, 260, player.ComboCount > 0 ? 220 : 160);
+            var uiBackground = new Rectangle(5, 5, 400, totalHeight);
             spriteBatch.Draw(_pixelTexture, uiBackground, new Color(0, 0, 0, 150));
 
             // HP
-            DrawTextWithShadow(spriteBatch, $"HP: {player.Health:F0}/{player.MaxHealth:F0}",
-                new Vector2(15, 15), Color.Red);
+            var hpColor = _healthFlashTimer > 0 ? Color.OrangeRed : Color.Red;
+            DrawTextWithShadow(spriteBatch, $"HP: {_player.Health:F0}/{_player.MaxHealth:F0}",
+                new Vector2(15, 15), hpColor);
 
+            var hpProgress = _player.Health / _player.MaxHealth;
             DrawProgressBar(spriteBatch, new Vector2(15, 35), 200, 10,
-                player.Health / player.MaxHealth, Color.Red, "Health");
+                hpProgress, Color.Red, "Health");
+
+            // Вспышка при получении урона
+            if (_healthFlashTimer > 0)
+            {
+                var flashAlpha = _healthFlashTimer / HealthFlashDuration;
+                var flashRect = new Rectangle(13, 33, 204, 14);
+                spriteBatch.Draw(_pixelTexture, flashRect, Color.Red * (flashAlpha * 0.5f));
+            }
 
             // Уровень
-            DrawTextWithShadow(spriteBatch, $"Level: {player.Level}",
+            DrawTextWithShadow(spriteBatch, $"Level: {_player.Level}",
                 new Vector2(15, 55), Color.Green);
 
             // Опыт
-            DrawTextWithShadow(spriteBatch, $"XP: {player.Experience:F0}/{player.ExperienceToNextLevel:F0}",
+            DrawTextWithShadow(spriteBatch, $"XP: {_player.Experience:F0}/{_player.ExperienceToNextLevel:F0}",
                 new Vector2(15, 75), Color.Blue);
 
             DrawProgressBar(spriteBatch, new Vector2(15, 95), 200, 10,
-                player.Experience / player.ExperienceToNextLevel, Color.Blue, "XP");
+                _player.Experience / _player.ExperienceToNextLevel, Color.Blue, "XP");
 
             // Комбо
-            if (player.ComboCount > 0)
+            if (_player.ComboCount > 0)
             {
-                var comboY = 120;
-                var comboText = $"COMBO: {player.ComboCount}x";
-                var comboColor = Color.Lerp(Color.Yellow, Color.Red, player.ComboCount / 50f);
-                DrawTextWithShadow(spriteBatch, comboText, new Vector2(15, comboY), comboColor);
+                const int comboY = 120;
+                var comboText = $"COMBO: {_player.ComboCount}x";
+                var comboColor = Color.Lerp(Color.Yellow, Color.Red, _player.ComboCount / 50f);
 
-                var bonusText = $"Damage: +{((player.ComboDamageMultiplier - 1) * 100):F0}%  " +
-                    $"XP: +{((player.ComboExperienceMultiplier - 1) * 100):F0}%";
+                // Пульсация при увеличении комбо
+                var comboScale = 1f;
+                if (_comboPulseTimer > 0)
+                {
+                    comboScale = 1f + (_comboPulseTimer / ComboPulseDuration) * 0.3f;
+                }
+
+                if (comboScale > 1f)
+                {
+                    var textSize = _font.MeasureString(comboText);
+                    var origin = new Vector2(textSize.X / 2, textSize.Y / 2);
+                    var position = new Vector2(15 + textSize.X / 2, comboY + textSize.Y / 2);
+                    spriteBatch.DrawString(_font, comboText, position + new Vector2(1, 1),
+                        Color.Black * 0.5f, 0f, origin, comboScale, SpriteEffects.None, 0);
+                    spriteBatch.DrawString(_font, comboText, position,
+                        comboColor, 0f, origin, comboScale, SpriteEffects.None, 0);
+                }
+                else
+                {
+                    DrawTextWithShadow(spriteBatch, comboText, new Vector2(15, comboY), comboColor);
+                }
+
+                var bonusText = $"Damage: +{((_player.ComboDamageMultiplier - 1) * 100):F0}%  " +
+                    $"XP: +{((_player.ComboExperienceMultiplier - 1) * 100):F0}%";
                 DrawTextWithShadow(spriteBatch, bonusText, new Vector2(15, comboY + 20), Color.LightGreen);
 
                 // Таймер комбо
                 var timerBarPosition = new Vector2(15, comboY + 45);
-                var timerBarWidth = 200;
-                var timerBarHeight = 8;
-                var timerFillWidth = (int)(timerBarWidth * (player.ComboTimer / Player.ComboTimeout));
+                const int timerBarWidth = 200;
+                const int timerBarHeight = 8;
+                var timerFillWidth = (int)(timerBarWidth * (_player.ComboTimer / Player.ComboTimeout));
 
                 spriteBatch.Draw(_pixelTexture,
                     new Rectangle((int)timerBarPosition.X, (int)timerBarPosition.Y, timerBarWidth, timerBarHeight),
                     new Color(60, 60, 60, 200));
 
-                var timerColor = Color.Lerp(Color.Cyan, Color.Magenta, player.ComboTimer / Player.ComboTimeout);
+                var timerColor = Color.Lerp(Color.Cyan, Color.Magenta, _player.ComboTimer / Player.ComboTimeout);
                 spriteBatch.Draw(_pixelTexture,
                     new Rectangle((int)timerBarPosition.X, (int)timerBarPosition.Y, timerFillWidth, timerBarHeight),
                     timerColor);
@@ -368,17 +390,22 @@ namespace ComboArena.View
             }
 
             // Активные перки (максимум 5)
-            var perkY = player.ComboCount > 0 ? 180 : 120;
-            DrawTextWithShadow(spriteBatch, "Active Perks:", new Vector2(15, perkY), Color.Gold);
+            var perkY = baseHeight + 5;
+            if (_player.ComboCount > 0)
+                perkY += comboHeight;
 
-            perkY += 20;
-            var perkCount = 0;
-            foreach (var perk in player.ActivePerks)
+            if (perkCount > 0)
             {
-                if (perkCount >= 5) break;
-                DrawTextWithShadow(spriteBatch, $"- {perk.Name}", new Vector2(20, perkY), Color.Yellow);
-                perkY += 18;
-                perkCount++;
+                DrawTextWithShadow(spriteBatch, "Active Perks:", new Vector2(15, perkY), Color.Gold);
+                perkY += 20;
+                var shownPerks = 0;
+                foreach (var perk in _player.ActivePerks)
+                {
+                    if (shownPerks >= 5) break;
+                    DrawTextWithShadow(spriteBatch, $"- {perk.Name}", new Vector2(20, perkY), Color.Yellow);
+                    perkY += 18;
+                    shownPerks++;
+                }
             }
 
             // Счётчик врагов
@@ -388,13 +415,25 @@ namespace ComboArena.View
             var enemyTextPosition = new Vector2(viewport.Width - enemyTextSize.X - 20, 15);
             DrawTextWithShadow(spriteBatch, enemyText, enemyTextPosition, Color.Orange);
 
+            // LEVEL UP! текст
+            if (_levelUpTimer > 0)
+            {
+                var levelUpAlpha = Math.Min(_levelUpTimer / LevelUpDuration * 2f, 1f);
+                var levelUpText = "LEVEL UP!";
+                var levelUpSize = _font.MeasureString(levelUpText);
+                var levelUpPos = new Vector2(
+                    (viewport.Width - levelUpSize.X) / 2,
+                    viewport.Height * 0.3f);
+                var levelUpColor = Color.Gold * levelUpAlpha;
+                spriteBatch.DrawString(_font, levelUpText,
+                    levelUpPos + new Vector2(2, 2), Color.Black * (levelUpAlpha * 0.5f));
+                spriteBatch.DrawString(_font, levelUpText, levelUpPos, levelUpColor);
+            }
+
             // UI способности
             DrawAbilityUI(spriteBatch, viewport);
         }
 
-        /// <summary>
-        /// Рисует полоску прогресса (HP, XP) с фоном, заполнением и рамкой.
-        /// </summary>
         private void DrawProgressBar(SpriteBatch spriteBatch, Vector2 position, int width, int height,
             float progress, Color color, string label = "")
         {
@@ -419,17 +458,13 @@ namespace ComboArena.View
             }
         }
 
-        /// <summary>
-        /// Рисует панель активной способности в правом нижнем углу экрана.
-        /// </summary>
         private void DrawAbilityUI(SpriteBatch spriteBatch, Viewport viewport)
         {
-            var player = _player;
-            if (player.Ability == null) return;
+            if (_player.Ability == null) return;
 
-            var ability = player.Ability;
-            var barWidth = 200;
-            var barHeight = 16;
+            var ability = _player.Ability;
+            const int barWidth = 200;
+            const int barHeight = 16;
             var x = viewport.Width - barWidth - 20;
             var y = viewport.Height - 60;
 
@@ -440,7 +475,7 @@ namespace ComboArena.View
             // Название
             DrawTextWithShadow(spriteBatch, $"[E] {ability.Name}", new Vector2(x, y - 5), Color.Gold);
 
-            // Полоска кулдауна
+            // Полоска КД
             var cooldownProgress = ability.GetCooldownProgress();
             var barY = y + 20;
 
@@ -467,12 +502,8 @@ namespace ComboArena.View
             var statusColor = ability.IsReady ? Color.Lime : Color.White * 0.7f;
             DrawTextWithShadow(spriteBatch, statusText, new Vector2(x, barY + barHeight + 2), statusColor);
         }
-        
-        /// <summary>
-        /// Рисует полноэкранный интерфейс выбора перка.
-        /// Отображает до 3 карточек с названием, описанием и клавишей выбора.
-        /// </summary>
-        public void DrawPerkSelection(SpriteBatch spriteBatch)
+
+        private void DrawPerkSelection(SpriteBatch spriteBatch)
         {
             if (!_isChoosingPerk) return;
 
@@ -485,15 +516,15 @@ namespace ComboArena.View
             spriteBatch.Draw(_pixelTexture, background, new Color(0, 0, 0, 180));
 
             // Заголовок
-            var title = "CHOOSE A PERK";
+            const string title = "CHOOSE A PERK";
             var titleSize = _font.MeasureString(title);
             var titlePos = new Vector2((screenWidth - titleSize.X) / 2, screenHeight * 0.1f);
             DrawTextWithShadow(spriteBatch, title, titlePos, Color.Gold);
 
             // Карточки перков
-            var cardWidth = 320;
-            var cardHeight = 240;
-            var spacing = 40;
+            const int cardWidth = 320;
+            const int cardHeight = 240;
+            const int spacing = 40;
             var totalWidth = _offeredPerks.Count * cardWidth +
                 (_offeredPerks.Count - 1) * spacing;
             var startX = (screenWidth - totalWidth) / 2;
@@ -535,25 +566,19 @@ namespace ComboArena.View
             }
 
             // Инструкция
-            var instruction = "Press 1-3 to select a perk";
+            const string instruction = "Press 1-3 to select a perk";
             var instructionSize = _font.MeasureString(instruction);
             var instructionPos = new Vector2(
                 (screenWidth - instructionSize.X) / 2, y + cardHeight + 50);
             DrawTextWithShadow(spriteBatch, instruction, instructionPos, Color.LightGray);
         }
 
-        /// <summary>
-        /// Рисует текст с тенью (чёрная тень со смещением 1px).
-        /// </summary>
         private void DrawTextWithShadow(SpriteBatch spriteBatch, string text, Vector2 position, Color color)
         {
             spriteBatch.DrawString(_font, text, position + new Vector2(1, 1), Color.Black * 0.5f);
             spriteBatch.DrawString(_font, text, position, color);
         }
 
-        /// <summary>
-        /// Разбивает текст на строки по ширине, чтобы он помещался в заданную ширину.
-        /// </summary>
         private string WrapText(string text, float maxWidth)
         {
             if (string.IsNullOrEmpty(text)) return text;
@@ -594,14 +619,37 @@ namespace ComboArena.View
             return wrappedText;
         }
         
-        /// <summary>
-        /// Обработчик начала/окончания выбора перка.
-        /// Обновляет флаг выбора перка.
-        /// </summary>
         private void OnPerkSelection(IEvent evt)
         {
-            if (evt is not PerkSelectionEvent pse) return;
-            _isChoosingPerk = pse.IsChoosing;
+            if (evt is not PerkSelectionEvent perkEvent) return;
+            _isChoosingPerk = perkEvent.IsChoosing;
+        }
+
+        private void OnHealthChanged(IEvent evt)
+        {
+            if (evt is not HealthChangedEvent healthEvent) return;
+            if (healthEvent.Entity is not Player) return;
+            if (healthEvent.OldHealth > healthEvent.NewHealth)
+            {
+                _healthFlashTimer = HealthFlashDuration;
+                _damageFlashTimer = DamageFlashDuration;
+            }
+        }
+
+        private void OnComboChanged(IEvent evt)
+        {
+            if (evt is not ComboEvent comboEvent) return;
+            if (comboEvent.ComboCount > _lastComboCount)
+            {
+                _comboPulseTimer = ComboPulseDuration;
+            }
+            _lastComboCount = comboEvent.ComboCount;
+        }
+
+        private void OnLevelUp(IEvent evt)
+        {
+            if (evt is not LevelUpEvent) return;
+            _levelUpTimer = LevelUpDuration;
         }
     }
 }

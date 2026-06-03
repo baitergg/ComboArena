@@ -4,50 +4,36 @@ using System;
 namespace ComboArena.Model
 {
     /// <summary>
-    /// Тип перка — улучшения, которое игрок может выбрать.
+    /// Тип перка - улучшения, которое игрок может выбрать.
     /// </summary>
     public enum PerkType
     {
-        /// <summary>Увеличение урона атаки на 20%.</summary>
         DamageUp,
 
-        /// <summary>Уменьшение кулдауна атаки на 20%.</summary>
         AttackSpeedUp,
 
-        /// <summary>Увеличение максимального здоровья на 30%.</summary>
         MaxHealthUp,
 
-        /// <summary>Увеличение скорости передвижения на 15%.</summary>
         SpeedUp,
 
-        /// <summary>Увеличение дальности атаки на 25%.</summary>
         RangeUp,
 
-        /// <summary>Вампиризм: 10% урона восстанавливается как HP.</summary>
         Vampirism,
 
-        /// <summary>Увеличение получаемого опыта на 50%.</summary>
         ExperienceBoost,
 
-        /// <summary>Огненный взрыв (AoE урон вокруг игрока).</summary>
         AbilityFireBurst,
 
-        /// <summary>Щит (временная неуязвимость + отталкивание врагов).</summary>
         AbilityBarrier,
 
-        /// <summary>Увеличение радиуса FireBurst на 30.</summary>
         FireBurstRadiusUp,
 
-        /// <summary>Увеличение урона FireBurst на 15.</summary>
         FireBurstDamageUp,
 
-        /// <summary>Уменьшение кулдауна FireBurst на 20%.</summary>
         FireBurstCooldownDown,
 
-        /// <summary>Увеличение длительности Barrier на 1 секунду.</summary>
         BarrierDurationUp,
 
-        /// <summary>Уменьшение кулдауна Barrier на 20%.</summary>
         BarrierCooldownDown
     }
 
@@ -57,29 +43,18 @@ namespace ComboArena.Model
     /// </summary>
     public class Perk
     {
-        /// <summary>Название перка (например, "Damage Up").</summary>
         public string Name { get; }
 
-        /// <summary>Описание перка (например, "Increase attack damage by 20%").</summary>
         public string Description { get; }
 
-        /// <summary>Тип перка, определяющий его эффект.</summary>
         public PerkType Type { get; }
 
-        /// <summary>
-        /// Создаёт перк указанного типа с автоматическим названием и описанием.
-        /// </summary>
         public Perk(PerkType type)
         {
             Type = type;
             (Name, Description) = GetPerkInfo(type);
         }
 
-        /// <summary>
-        /// Применяет эффект перка к указанному игроку.
-        /// В зависимости от типа перка изменяет характеристики игрока,
-        /// добавляет способность или улучшает существующую.
-        /// </summary>
         public void Apply(Player player)
         {
             switch (Type)
@@ -147,11 +122,6 @@ namespace ComboArena.Model
             }
         }
 
-        /// <summary>
-        /// Возвращает название и описание для указанного типа перка.
-        /// </summary>
-        /// <param name="type">Тип перка.</param>
-        /// <returns>Кортеж (Name, Description).</returns>
         private (string Name, string Description) GetPerkInfo(PerkType type)
         {
             return type switch

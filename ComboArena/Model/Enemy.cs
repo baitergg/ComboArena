@@ -9,32 +9,25 @@ namespace ComboArena.Model
     /// </summary>
     public enum EnemyType
     {
-        /// <summary>Красный враг — лёгкий, быстрый, слабый.</summary>
         Red,
 
-        /// <summary>Синий враг — средний, выносливый, с рывком.</summary>
         Blue,
 
-        /// <summary>Жёлтый враг — тяжёлый, медленный, с лазером.</summary>
         Yellow
     }
 
     /// <summary>
     /// Уровни сложности врагов. С каждым тиром враги получают новые способности.
-    /// Normal (1-2) → Elite (3-5) → Champion (6-8) → Boss (9+).
+    /// Normal (1-2) > Elite (3-5) > Champion (6-8) > Boss (9+).
     /// </summary>
     public enum EnemyTier
     {
-        /// <summary>Обычный враг (уровни 1-2). Без способностей.</summary>
         Normal = 0,
 
-        /// <summary>Элитный враг (уровни 3-5). Получает первую способность.</summary>
         Elite = 1,
 
-        /// <summary>Чемпион (уровни 6-8). Улучшенная способность.</summary>
         Champion = 2,
 
-        /// <summary>Босс (уровень 9+). Максимальная сила и способности.</summary>
         Boss = 3
     }
 
@@ -45,85 +38,58 @@ namespace ComboArena.Model
     /// </summary>
     public abstract class Enemy : Entity
     {
-        /// <summary>Тип врага (Red/Blue/Yellow).</summary>
         public abstract EnemyType Type { get; }
         
-        /// <summary>Урон, наносимый врагом при контакте.</summary>
         public float Damage { get; private set; }
 
-        /// <summary>Количество опыта, даваемое за убийство.</summary>
-        public float ExperienceReward { get; private set; }
+        private float ExperienceReward { get; set; }
 
-        /// <summary>Тир сложности врага.</summary>
         public EnemyTier Tier { get; private set; } = EnemyTier.Normal;
 
-        /// <summary>Уровень врага (соответствует уровню игрока на момент спавна).</summary>
         public int Level { get; private set; } = 1;
-        
-        /// <summary>Базовый урон (до масштабирования).</summary>
-        protected float BaseDamage { get; }
 
-        /// <summary>Базовый кулдаун атаки в секундах.</summary>
-        protected float BaseAttackCooldown { get; }
+        private float BaseDamage { get; }
 
-        /// <summary>Базовая дистанция обнаружения игрока в пикселях.</summary>
-        protected float BaseDetectionRange { get; }
+        private float BaseAttackCooldown { get; }
 
-        /// <summary>Базовая награда опытом.</summary>
-        protected float BaseExperienceReward { get; }
+        private float BaseDetectionRange { get; }
 
-        /// <summary>Базовое максимальное здоровье.</summary>
-        protected float BaseMaxHealth { get; }
+        private float BaseExperienceReward { get; }
 
-        /// <summary>Базовая скорость движения.</summary>
+        private float BaseMaxHealth { get; }
+
         protected float BaseSpeed { get; }
         
-        /// <summary>Кулдаун между атаками в секундах.</summary>
         private float AttackCooldown { get; set; }
 
-        /// <summary>Дистанция обнаружения игрока в пикселях.</summary>
         private float DetectionRange { get; set; }
 
-        /// <summary>Таймер до следующей атаки.</summary>
         private float _attackTimer;
 
-        /// <summary>Генератор случайных чисел.</summary>
-        protected readonly Random _random = new();
+        private readonly Random _random = new();
 
-        /// <summary>Текущее направление движения.</summary>
         private Vector2 _targetDirection;
 
-        /// <summary>Таймер смены случайного направления (когда игрок вне зоны обнаружения).</summary>
         private float _directionChangeTimer;
 
-        /// <summary>Ссылка на игрока — цель врага.</summary>
-        protected Player _playerTarget;
-        
-        /// <summary>Может ли враг делать рывок (Blue).</summary>
-        public bool CanRush { get; private set; }
+        private Player _playerTarget;
 
-        /// <summary>Может ли враг стрелять лазером (Yellow).</summary>
-        public bool CanShootLaser { get; private set; }
+        private bool CanRush { get; set; }
 
-        /// <summary>В ярости ли враг (Red) — ускорение при низком HP.</summary>
-        public bool IsEnraged { get; private set; }
-        
-        /// <summary>Кулдаун между рывками.</summary>
-        public float RushCooldown { get; private set; }
+        private bool CanShootLaser { get; set; }
 
-        /// <summary>Скорость во время рывка.</summary>
-        public float RushSpeed { get; private set; }
+        private bool IsEnraged { get; set; }
 
-        /// <summary>Урон лазера.</summary>
-        public float LaserDamage { get; private set; }
+        private float RushCooldown { get; set; }
 
-        /// <summary>Дальность лазера.</summary>
+        private float RushSpeed { get; set; }
+
+        private float LaserDamage { get; set; }
+
         public float LaserRange { get; private set; }
 
-        /// <summary>Множитель скорости в режиме ярости.</summary>
-        public float EnrageSpeedMultiplier { get; private set; }
+        private float EnrageSpeedMultiplier { get; set; }
         
-        /// <summary>Таймеры способностей.</summary>
         private float _rushCooldownTimer;
         private float _rushDurationTimer;
         private bool _isRushing;
@@ -134,20 +100,14 @@ namespace ComboArena.Model
         private float _laserDurationTimer;
         private bool _laserHitApplied;
 
-        /// <summary>true, если враг в настоящий момент стреляет лазером.</summary>
         public bool IsShootingLaser { get; private set; }
 
-        /// <summary>Таймер анимации лазера.</summary>
         public float LaserAnimationTimer { get; private set; }
 
-        /// <summary>Направление лазера.</summary>
         public Vector2 LaserDirection { get; private set; }
 
         private const float LaserDuration = 0.4f;
         
-        /// <summary>
-        /// Создаёт врага с заданными базовыми характеристиками.
-        /// </summary>
         protected Enemy(float x, float y, float width, float height, float maxHealth, float speed,
             float damage, float attackCooldown, float detectionRange, float experienceReward)
             : base(x, y, width, height, maxHealth, speed)
@@ -170,10 +130,6 @@ namespace ComboArena.Model
             CollisionScale = 0.35f;
         }
         
-        /// <summary>
-        /// Масштабирует характеристики врага под уровень игрока.
-        /// Вызывается при спавне. Определяет тир и разблокирует способности.
-        /// </summary>
         public void ApplyDifficultyScaling(int playerLevel, float hpScalingMultiplier = 1f)
         {
             Level = playerLevel;
@@ -203,10 +159,6 @@ namespace ComboArena.Model
             UnlockAbilities();
         }
 
-        /// <summary>
-        /// Увеличивает максимальное HP существующего врага (каждые 3 уровня игрока).
-        /// Сохраняет процент текущего здоровья.
-        /// </summary>
         public void ApplyHpMultiplier(float multiplier)
         {
             var oldMaxHealth = MaxHealth;
@@ -214,28 +166,15 @@ namespace ComboArena.Model
             Health = (float)Math.Round(Health * (MaxHealth / oldMaxHealth));
         }
 
-        /// <summary>
-        /// Разблокирует способности в зависимости от тира.
-        /// Переопределяется в конкретных классах врагов.
-        /// </summary>
         protected virtual void UnlockAbilities()
         {
         }
 
-        /// <summary>
-        /// Устанавливает игрока как цель для преследования.
-        /// </summary>
-        /// <param name="player">Игрок.</param>
         public void SetPlayerTarget(Player player)
         {
             _playerTarget = player;
         }
 
-        /// <summary>
-        /// Обновляет состояние врага каждый кадр:
-        /// движение к игроку, использование способностей, обновление таймеров.
-        /// </summary>
-        /// <param name="gameTime">Игровое время.</param>
         public override void Update(GameTime gameTime)
         {
             base.Update(gameTime);
@@ -290,10 +229,6 @@ namespace ComboArena.Model
             }
         }
 
-        /// <summary>
-        /// Обновляет состояние способностей врага:
-        /// ярость (Red), рывок (Blue), лазер (Yellow).
-        /// </summary>
         private void UpdateAbilities(float delta, Vector2 toPlayer, float distance)
         {
             if (IsEnraged && Health / MaxHealth < 0.3f)
@@ -357,9 +292,6 @@ namespace ComboArena.Model
             }
         }
 
-        /// <summary>
-        /// Проверяет, попадает ли игрок в луч лазера.
-        /// </summary>
         public bool IsPlayerInLaser(Player player)
         {
             var enemyCenter = Position + new Vector2(Width / 2, Height / 2);
@@ -378,10 +310,6 @@ namespace ComboArena.Model
             return Math.Abs(angle) <= laserArc;
         }
 
-        /// <summary>
-        /// Пытается применить урон от лазера к игроку.
-        /// Урон наносится только один раз за выстрел.
-        /// </summary>
         public bool TryApplyLaserHit()
         {
             if (!IsShootingLaser || _laserHitApplied) return false;
@@ -389,17 +317,11 @@ namespace ComboArena.Model
             return true;
         }
 
-        /// <summary>
-        /// Возвращает урон лазера.
-        /// </summary>
         public float GetLaserDamage()
         {
             return LaserDamage;
         }
 
-        /// <summary>
-        /// Инициализирует способность рывка (Blue).
-        /// </summary>
         protected void InitRushAbility(float cooldown, float speed)
         {
             CanRush = true;
@@ -408,9 +330,6 @@ namespace ComboArena.Model
             _rushCooldownTimer = cooldown * 0.5f;
         }
 
-        /// <summary>
-        /// Инициализирует способность лазера (Yellow).
-        /// </summary>
         protected void InitLaserAbility(float damage, float range)
         {
             CanShootLaser = true;
@@ -419,35 +338,22 @@ namespace ComboArena.Model
             _laserCooldownTimer = 1.5f;
         }
 
-        /// <summary>
-        /// Инициализирует способность ярости (Red).
-        /// </summary>
         protected void InitEnrageAbility(float speedMultiplier)
         {
             IsEnraged = true;
             EnrageSpeedMultiplier = speedMultiplier;
         }
 
-        /// <summary>
-        /// Проверяет, может ли враг атаковать (кулдаун прошёл).
-        /// </summary>
-        /// <returns>true, если атака доступна.</returns>
         public bool CanAttack()
         {
             return _attackTimer <= 0;
         }
 
-        /// <summary>
-        /// Сбрасывает таймер атаки (ставит кулдаун).
-        /// </summary>
         public void ResetAttackCooldown()
         {
             _attackTimer = AttackCooldown;
         }
 
-        /// <summary>
-        /// Наносит урон врагу. Если враг умирает — публикует EnemyDeathEvent.
-        /// </summary>
         public override void TakeDamage(float damage)
         {
             var oldHealth = Health;

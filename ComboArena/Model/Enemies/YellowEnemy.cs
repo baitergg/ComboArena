@@ -1,7 +1,4 @@
-﻿using Microsoft.Xna.Framework;
-using System;
-
-namespace ComboArena.Model
+﻿namespace ComboArena.Model
 {
     /// <summary>
     /// Жёлтый враг - тяжёлый, медленный, но с большим
@@ -11,14 +8,8 @@ namespace ComboArena.Model
     /// </summary>
     public class YellowEnemy : Enemy
     {
-        /// <summary>Тип врага - Yellow.</summary>
         public override EnemyType Type => EnemyType.Yellow;
         
-        /// <summary>
-        /// Создаёт жёлтого врага в указанной позиции.
-        /// Характеристики: HP 60, скорость 60, урон 10, кулдаун атаки 1.8с,
-        /// дальность обнаружения 500, награда опытом 35.
-        /// </summary>
         public YellowEnemy(float x, float y)
             : base(x, y,
                 width: 100,
@@ -32,12 +23,6 @@ namespace ComboArena.Model
         {
         }
 
-        /// <summary>
-        /// Разблокирует способность "Лазер" в зависимости от тира:
-        /// Elite - урон 5, дальность 300,
-        /// Champion - урон 10, дальность 400,
-        /// Boss - урон 15, дальность 500.
-        /// </summary>
         protected override void UnlockAbilities()
         {
             switch (Tier)

@@ -16,103 +16,74 @@ namespace ComboArena.Controller
     /// </summary>
     public class GameController
     {
-        /// <summary>Игрок - главный управляемый персонаж.</summary>
         public Player Player { get; }
 
-        /// <summary>Список всех активных врагов на карте.</summary>
         public List<Enemy> Enemies { get; }
 
-        /// <summary>Список выпавших предметов (опыт/здоровье).</summary>
         public List<DropItem> DropItems { get; }
 
-        /// <summary>true, если игрок в настоящий момент выбирает перк.</summary>
         public bool IsChoosingPerk { get; private set; }
 
-        /// <summary>Список перков, предлагаемых игроку для выбора.</summary>
         public List<Perk> OfferedPerks { get; }
 
-        /// <summary>Общий список всех сущностей.</summary>
-        private List<Entity> _entities { get; }
-
-        /// <summary>Шина событий.</summary>
         private readonly EventBus _eventBus;
 
-        /// <summary>Количество перков, предлагаемых на выбор (всегда 3).</summary>
         private const int PerksToOffer = 3;
 
-        /// <summary>Генератор случайных чисел.</summary>
         private readonly Random _random = new();
 
-        /// <summary>Интервал между попытками спавна врагов (сек).</summary>
         private const float SpawnInterval = 1f;
 
-        /// <summary>Ширина зоны спавна вокруг игрока.</summary>
         private const float SpawnZoneWidth = 1200f;
 
-        /// <summary>Высота зоны спавна вокруг игрока.</summary>
         private const float SpawnZoneHeight = 800f;
 
-        /// <summary>Минимальная дистанция от игрока для спавна врага.</summary>
         private const float MinSpawnDistance = 300f;
 
-        /// <summary>Максимальное количество врагов на карте.</summary>
         private const int MaxEnemies = 30;
 
-        /// <summary>Максимальная дистанция от игрока, после которой враг удаляется.</summary>
         private const float MaxEnemyDistance = 2000f;
 
-        /// <summary>Максимальное количество попыток найти позицию для спавна.</summary>
         private const int MaxSpawnAttempts = 5;
 
-        /// <summary>Таймер до следующего спавна врага.</summary>
         private float _spawnTimer;
 
-        /// <summary>Множитель HP врагов (увеличивается каждые 3 уровня игрока).</summary>
         private float _enemyHpMultiplier = 1f;
 
-        /// <summary>Флаг для обработки однократного нажатия клавиши способности.</summary>
         private bool _abilityKeyPressed;
 
         
-        /// <summary>
-        /// Создаёт контроллер игры, инициализирует игрока, списки врагов,
-        /// дропа и перков. Подписывается на событие повышения уровня игрока
-        /// и на событие смерти врага через EventBus.
-        /// </summary>
         public GameController()
         {
             _eventBus = EventBus.Instance;
             Enemies = [];
-            _entities = [];
             DropItems = [];
             OfferedPerks = [];
             Player = new Player(0, 0);
-            _entities.Add(Player);
             Player.OnLevelUp += OnPlayerLevelUp;
             _eventBus.Subscribe("EnemyDeath", OnEnemyDeath);
         }
         
-        /// <summary>
-        /// Выбирает перк по индексу (0-2) и применяет его к игроку.
-        /// </summary>
-        /// <param name="index">Индекс выбранного перка.</param>
         public void SelectPerk(int index)
         {
             if (!IsChoosingPerk || index < 0 || index >= OfferedPerks.Count) return;
 
             var selectedPerk = OfferedPerks[index];
+
+            // Если выбрана способность, а у игрока уже есть другая - удаляем старую
+            if (selectedPerk.Type is PerkType.AbilityFireBurst or PerkType.AbilityBarrier)
+            {
+                if (Player.HasAbility)
+                    Player.RemoveAbility();
+            }
+
             Player.ApplyPerk(selectedPerk);
+            Player.HealToFull();
             IsChoosingPerk = false;
             OfferedPerks.Clear();
             _eventBus.Publish(new PerkSelectionEvent(false, OfferedPerks));
         }
 
-        /// <summary>
-        /// Главный метод обновления, вызываемый каждый кадр.
-        /// Если игрок выбирает перк — обновление приостанавливается.
-        /// Иначе: обработка ввода, обновление игрока, врагов, спавн, коллизии, дроп.
-        /// </summary>
-        /// <param name="gameTime">Игровое время.</param>
         public void Update(GameTime gameTime)
         {
             if (IsChoosingPerk) return;
@@ -128,10 +99,6 @@ namespace ComboArena.Controller
             UpdateDropItems(gameTime);
         }
         
-        /// <summary>
-        /// Обрабатывает ввод с клавиатуры: движение (WASD), атаку (Space),
-        /// активацию способности (E).
-        /// </summary>
         private void ProcessInput()
         {
             var keyboardState = Keyboard.GetState();
@@ -145,7 +112,6 @@ namespace ComboArena.Controller
             Player.SetMovementDirection(direction);
             Player.SetAttacking(keyboardState.IsKeyDown(Keys.Space));
 
-            // Активация способности по нажатию E 
             if (keyboardState.IsKeyDown(Keys.E) && !_abilityKeyPressed)
             {
                 Player.UseAbility(Enemies);
@@ -157,10 +123,6 @@ namespace ComboArena.Controller
             }
         }
         
-        /// <summary>
-        /// Обновляет всех врагов: движение, удаление мёртвых/далёких, создание дропа.
-        /// </summary>
-        /// <param name="gameTime">Игровое время.</param>
         private void UpdateEnemies(GameTime gameTime)
         {
             for (var i = Enemies.Count - 1; i >= 0; i--)
@@ -173,22 +135,16 @@ namespace ComboArena.Controller
                 if (distance > MaxEnemyDistance)
                 {
                     Enemies.RemoveAt(i);
-                    _entities.Remove(enemy);
                     continue;
                 }
 
-                // Если враг мёртв — удаляем (дроп и опыт создаются через EnemyDeathEvent)
+                // Если враг мёртв - удаляем (дроп и опыт создаются через EnemyDeathEvent)
                 if (enemy.IsAlive) continue;
 
                 Enemies.RemoveAt(i);
-                _entities.Remove(enemy);
             }
         }
 
-        /// <summary>
-        /// Обновляет таймер спавна врагов и пытается создать нового врага.
-        /// </summary>
-        /// <param name="delta">Разница времени.</param>
         private void UpdateEnemySpawning(float delta)
         {
             _spawnTimer -= delta;
@@ -198,10 +154,6 @@ namespace ComboArena.Controller
             _spawnTimer = SpawnInterval;
         }
         
-        /// <summary>
-        /// Создаёт врага случайного типа в указанной позиции.
-        /// </summary>
-        /// <returns>Новый экземпляр врага.</returns>
         private Enemy CreateRandomEnemy(float x, float y)
         {
             var enemyTypes = new[] { EnemyType.Red, EnemyType.Blue, EnemyType.Yellow };
@@ -209,12 +161,7 @@ namespace ComboArena.Controller
             return CreateEnemy(randomType, x, y);
         }
 
-        /// <summary>
-        /// Создаёт врага указанного типа в заданной позиции.
-        /// </summary>
-        /// <param name="type">Тип врага.</param>
-        /// <returns>Новый экземпляр врага.</returns>
-        private Enemy CreateEnemy(EnemyType type, float x, float y)
+        private static Enemy CreateEnemy(EnemyType type, float x, float y)
         {
             return type switch
             {
@@ -225,17 +172,13 @@ namespace ComboArena.Controller
             };
         }
 
-        /// <summary>
-        /// Пытается заспавнить врага в зоне вокруг игрока.
-        /// Делает несколько попыток найти свободную позицию.
-        /// </summary>
         private void TrySpawnEnemy()
         {
             if (Enemies.Count >= MaxEnemies) return;
 
             var playerCenter = Player.Position + new Vector2(Player.Width / 2, Player.Height / 2);
-            var spawnHalfWidth = SpawnZoneWidth / 2;
-            var spawnHalfHeight = SpawnZoneHeight / 2;
+            const float spawnHalfWidth = SpawnZoneWidth / 2;
+            const float spawnHalfHeight = SpawnZoneHeight / 2;
 
             for (var attempt = 0; attempt < MaxSpawnAttempts; attempt++)
             {
@@ -254,16 +197,11 @@ namespace ComboArena.Controller
                 enemy.ApplyDifficultyScaling(Player.Level, _enemyHpMultiplier);
 
                 Enemies.Add(enemy);
-                _entities.Add(enemy);
 
                 return;
             }
         }
         
-        /// <summary>
-        /// Обрабатывает все коллизии: подбор дропа, лазерные атаки,
-        /// контактный урон врагов, атаку игрока по врагам.
-        /// </summary>
         private void ProcessCollisions()
         {
             if (!Player.IsAlive) return;
@@ -298,14 +236,13 @@ namespace ComboArena.Controller
                     var enemy = Enemies[i];
                     if (!Player.IsInAttackArc(enemy)) continue;
 
-                    var damage = Player.AttackDamage * Player.GetComboBonusDamage(1f);
+                    var damage = Player.AttackDamage * Player.ComboDamageMultiplier;
                     enemy.TakeDamage(damage);
 
                     // Дроп, опыт, комбо и вампиризм создаются через EnemyDeathEvent
                     if (!enemy.IsAlive)
                     {
                         Enemies.RemoveAt(i);
-                        _entities.Remove(enemy);
                     }
                 }
 
@@ -313,9 +250,6 @@ namespace ComboArena.Controller
             }
         }
 
-        /// <summary>
-        /// Обрабатывает лазерные атаки Yellow-врагов по игроку.
-        /// </summary>
         private void ProcessLaserAttacks()
         {
             foreach (var enemy in Enemies)
@@ -330,9 +264,6 @@ namespace ComboArena.Controller
             }
         }
 
-        /// <summary>
-        /// Собирает все дропы, с которыми пересекается игрок.
-        /// </summary>
         private void CollectDrops()
         {
             for (var i = DropItems.Count - 1; i >= 0; i--)
@@ -345,10 +276,6 @@ namespace ComboArena.Controller
             }
         }
 
-        /// <summary>
-        /// Обновляет все выпавшие предметы и удаляет истёкшие.
-        /// </summary>
-        /// <param name="gameTime">Игровое время.</param>
         private void UpdateDropItems(GameTime gameTime)
         {
             for (var i = DropItems.Count - 1; i >= 0; i--)
@@ -356,6 +283,7 @@ namespace ComboArena.Controller
                 var drop = DropItems[i];
                 drop.Update(gameTime);
 
+                
                 if (!drop.IsActive)
                 {
                     DropItems.RemoveAt(i);
@@ -363,12 +291,6 @@ namespace ComboArena.Controller
             }
         }
 
-        /// <summary>
-        /// Создаёт выпадающие предметы в позиции врага.
-        /// 30% шанс выпадения сердца (здоровье) + 1-3 частицы опыта.
-        /// </summary>
-        /// <param name="position">Позиция, где был убит враг.</param>
-        /// <param name="experienceReward">Базовая награда опытом врага.</param>
         private void CreateDrop(Vector2 position, float experienceReward)
         {
             // 30% шанс выпадения сердца
@@ -393,11 +315,6 @@ namespace ComboArena.Controller
             }
         }
         
-        /// <summary>
-        /// Начинает выбор перка. Гарантирует, что один из трёх слотов —
-        /// способность или её улучшение. Остальные слоты заполняются
-        /// случайными базовыми перками.
-        /// </summary>
         private void StartPerkSelection()
         {
             OfferedPerks.Clear();
@@ -413,9 +330,9 @@ namespace ComboArena.Controller
                 PerkType.ExperienceBoost
             };
 
-            // Если у игрока ещё нет способности — предлагаем одну из двух
             if (!Player.HasAbility)
             {
+                // Нет способности - предлагаем одну из двух случайно
                 var abilityChoice = _random.Next(2) == 0
                     ? PerkType.AbilityFireBurst
                     : PerkType.AbilityBarrier;
@@ -427,37 +344,36 @@ namespace ComboArena.Controller
                     : PerkType.AbilityFireBurst;
                 basePerkTypes.Add(otherAbility);
             }
-            else if (Player.Ability is FireBurst)
+            else
             {
-                // Если есть FireBurst — предлагаем улучшение для него
-                var upgrades = new List<PerkType>
+                // Есть способность - предлагаем другую (не текущую)
+                var otherAbility = Player.Ability is FireBurst
+                    ? PerkType.AbilityBarrier
+                    : PerkType.AbilityFireBurst;
+
+                OfferedPerks.Add(new Perk(otherAbility));
+
+                // Апгрейды для текущей способности добавляем в базовый пул
+                if (Player.Ability is FireBurst)
                 {
-                    PerkType.FireBurstRadiusUp,
-                    PerkType.FireBurstDamageUp,
-                    PerkType.FireBurstCooldownDown
-                };
-
-                var chosenIndex = _random.Next(upgrades.Count);
-                OfferedPerks.Add(new Perk(upgrades[chosenIndex]));
-                upgrades.RemoveAt(chosenIndex);
-                basePerkTypes.AddRange(upgrades);
-            }
-            else if (Player.Ability is Barrier)
-            {
-                // Если есть Barrier — предлагаем улучшение для него
-                var upgrades = new List<PerkType>
+                    basePerkTypes.AddRange(new[]
+                    {
+                        PerkType.FireBurstRadiusUp,
+                        PerkType.FireBurstDamageUp,
+                        PerkType.FireBurstCooldownDown
+                    });
+                }
+                else if (Player.Ability is Barrier)
                 {
-                    PerkType.BarrierDurationUp,
-                    PerkType.BarrierCooldownDown
-                };
-
-                var chosenIndex = _random.Next(upgrades.Count);
-                OfferedPerks.Add(new Perk(upgrades[chosenIndex]));
-                upgrades.RemoveAt(chosenIndex);
-                basePerkTypes.AddRange(upgrades);
+                    basePerkTypes.AddRange(new[]
+                    {
+                        PerkType.BarrierDurationUp,
+                        PerkType.BarrierCooldownDown
+                    });
+                }
             }
 
-            // Заполняем оставшиеся слоты случайными базовыми перками
+            // Заполняем оставшиеся слоты случайными перками из пула
             var pool = basePerkTypes.OrderBy(_ => _random.Next()).ToList();
             foreach (var perkType in pool)
             {
@@ -469,25 +385,19 @@ namespace ComboArena.Controller
             _eventBus.Publish(new PerkSelectionEvent(true, OfferedPerks));
         }
         
-        /// <summary>
-        /// Обработчик смерти врага. Создаёт дроп, начисляет опыт,
-        /// увеличивает комбо и применяет вампиризм.
-        /// </summary>
         private void OnEnemyDeath(IEvent evt)
         {
             if (evt is not EnemyDeathEvent deathEvent) return;
 
             CreateDrop(deathEvent.Position, deathEvent.ExperienceReward);
-            Player.AddExperience(deathEvent.ExperienceReward * Player.GetComboBonusExperience(1f));
+            Player.AddExperience(deathEvent.ExperienceReward * Player.ComboExperienceMultiplier);
             Player.AddCombo();
-            Player.HealOnKill();
+            if (Player.VampirismPercent > 0)
+            {
+                Player.HealOnKill();
+            }
         }
 
-        /// <summary>
-        /// Обработчик повышения уровня игрока.
-        /// Каждые 3 уровня: увеличивает HP врагов, запускает выбор перка.
-        /// </summary>
-        /// <param name="newLevel">Новый уровень игрока.</param>
         private void OnPlayerLevelUp(int newLevel)
         {
             if (newLevel % 3 == 0)

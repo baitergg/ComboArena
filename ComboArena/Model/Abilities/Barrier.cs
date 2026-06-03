@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 
 namespace ComboArena.Model.Abilities
@@ -10,25 +10,16 @@ namespace ComboArena.Model.Abilities
     /// </summary>
     public class Barrier : ActiveAbility
     {
-        /// <summary>Длительность действия щита в секундах.</summary>
         public float Duration { get; private set; }
 
-        /// <summary>Таймер оставшегося времени действия щита.</summary>
         public float Timer { get; private set; }
 
-        /// <summary>true, если щит в настоящий момент активен.</summary>
         public bool IsBarrierActive => IsActive;
 
-        /// <summary>Радиус отталкивания врагов в пикселях.</summary>
         public float PushRadius { get; }
 
-        /// <summary>Сила отталкивания врагов.</summary>
         public float PushForce { get; }
         
-        /// <summary>
-        /// Создаёт способность "Щит" с базовыми параметрами:
-        /// кулдаун 8 сек, длительность 2.5 сек, радиус толчка 130 пикселей.
-        /// </summary>
         public Barrier()
         {
             Type = AbilityType.Barrier;
@@ -40,9 +31,6 @@ namespace ComboArena.Model.Abilities
             PushForce = 300f;
         }
         
-        /// <summary>
-        /// Активирует щит: делает игрока неуязвимым и мгновенно отталкивает врагов.
-        /// </summary>
         public override void Activate(Player player, List<Enemy> enemies)
         {
             if (!IsReady) return;
@@ -55,11 +43,6 @@ namespace ComboArena.Model.Abilities
             PushEnemiesAway(player, enemies);
         }
 
-        /// <summary>
-        /// Обновляет состояние щита каждый кадр:
-        /// уменьшает таймер, постоянно отталкивает врагов внутри радиуса,
-        /// деактивирует щит по истечении времени.
-        /// </summary>
         public override void Update(float delta, Player player, List<Enemy> enemies)
         {
             base.Update(delta, player, enemies);
@@ -79,10 +62,6 @@ namespace ComboArena.Model.Abilities
             }
         }
         
-        /// <summary>
-        /// Отталкивает всех врагов в радиусе PushRadius от игрока.
-        /// Сила толчка уменьшается к краю радиуса.
-        /// </summary>
         private void PushEnemiesAway(Player player, List<Enemy> enemies)
         {
             var playerCenter = player.Position + new Vector2(player.Width / 2, player.Height / 2);
@@ -105,17 +84,11 @@ namespace ComboArena.Model.Abilities
             }
         }
         
-        /// <summary>
-        /// Увеличивает длительность щита на указанное количество секунд.
-        /// </summary>
         public void UpgradeDuration(float addSeconds)
         {
             Duration += addSeconds;
         }
 
-        /// <summary>
-        /// Уменьшает кулдаун щита, умножая его на множитель.
-        /// </summary>
         public void UpgradeCooldown(float multiplier)
         {
             Cooldown *= multiplier;

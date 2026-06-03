@@ -10,14 +10,8 @@ namespace ComboArena.Model
     /// </summary>
     public class BlueEnemy : Enemy
     {
-        /// <summary>Тип врага - Blue.</summary>
         public override EnemyType Type => EnemyType.Blue;
-
-        /// <summary>
-        /// Создаёт синего врага в указанной позиции.
-        /// Характеристики: HP 40, скорость 90, урон 6, кулдаун атаки 1.2с,
-        /// дальность обнаружения 400, награда опытом 20.
-        /// </summary>
+        
         public BlueEnemy(float x, float y)
             : base(x, y,
                 width: 100,
@@ -30,13 +24,7 @@ namespace ComboArena.Model
                 experienceReward: 20)
         {
         }
-
-        /// <summary>
-        /// Разблокирует способность "Рывок" в зависимости от тира:
-        /// Elite - кулдаун 4с, скорость 2.5x от базовой,
-        /// Champion - кулдаун 3с, скорость 3.5x,
-        /// Boss - кулдаун 2с, скорость 4.5x + базовая скорость увеличена на 20%.
-        /// </summary>
+        
         protected override void UnlockAbilities()
         {
             switch (Tier)

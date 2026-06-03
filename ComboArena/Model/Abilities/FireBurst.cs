@@ -1,4 +1,4 @@
-using Microsoft.Xna.Framework;
+﻿using Microsoft.Xna.Framework;
 using System.Collections.Generic;
 
 namespace ComboArena.Model.Abilities
@@ -10,22 +10,14 @@ namespace ComboArena.Model.Abilities
     /// </summary>
     public class FireBurst : ActiveAbility
     {
-        /// <summary>Радиус взрыва в пикселях.</summary>
         public float Radius { get; private set; }
 
-        /// <summary>Урон, наносимый каждому врагу в радиусе.</summary>
-        public float Damage { get; private set; }
+        private float Damage { get; set; }
 
-        /// <summary>Таймер анимации взрыва.</summary>
         public float AnimationTimer { get; private set; }
 
-        /// <summary>Длительность анимации взрыва в секундах.</summary>
         private const float AnimationDuration = 0.4f;
 
-        /// <summary>
-        /// Создаёт способность "Огненный взрыв" с базовыми параметрами:
-        /// кулдаун 5 сек, радиус 150 пикселей, урон 25.
-        /// </summary>
         public FireBurst()
         {
             Type = AbilityType.FireBurst;
@@ -36,10 +28,6 @@ namespace ComboArena.Model.Abilities
             Damage = 25f;
         }
 
-        /// <summary>
-        /// Активирует огненный взрыв: наносит урон всем врагам в радиусе
-        /// и запускает анимацию.
-        /// </summary>
         public override void Activate(Player player, List<Enemy> enemies)
         {
             if (!IsReady) return;
@@ -64,10 +52,6 @@ namespace ComboArena.Model.Abilities
             }
         }
 
-        /// <summary>
-        /// Обновляет состояние взрыва каждый кадр:
-        /// уменьшает таймер анимации и деактивирует способность по завершении.
-        /// </summary>
         public override void Update(float delta, Player player, List<Enemy> enemies)
         {
             base.Update(delta, player, enemies);
@@ -82,25 +66,16 @@ namespace ComboArena.Model.Abilities
             }
         }
 
-        /// <summary>
-        /// Увеличивает радиус взрыва на указанное значение.
-        /// </summary>
         public void UpgradeRadius(float addRadius)
         {
             Radius += addRadius;
         }
 
-        /// <summary>
-        /// Увеличивает урон взрыва на указанное значение.
-        /// </summary>
         public void UpgradeDamage(float addDamage)
         {
             Damage += addDamage;
         }
 
-        /// <summary>
-        /// Уменьшает кулдаун взрыва, умножая его на множитель.
-        /// </summary>
         public void UpgradeCooldown(float multiplier)
         {
             Cooldown *= multiplier;
