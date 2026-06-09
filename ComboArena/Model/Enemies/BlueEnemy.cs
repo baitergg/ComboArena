@@ -14,7 +14,7 @@ namespace ComboArena.Model
         
         public BlueEnemy(float x, float y)
             : base(x, y,
-                width: 100,
+                width: 143,
                 height: 80,
                 maxHealth: 40,
                 speed: 90,

@@ -311,7 +311,7 @@ namespace ComboArena.View
 
             var hpProgress = _player.Health / _player.MaxHealth;
             DrawProgressBar(spriteBatch, new Vector2(15, 35), 200, 10,
-                hpProgress, Color.Red, "Health");
+                hpProgress, Color.Red, "Здоровье");
 
             // Вспышка при получении урона
             if (_healthFlashTimer > 0)
@@ -322,15 +322,15 @@ namespace ComboArena.View
             }
 
             // Уровень
-            DrawTextWithShadow(spriteBatch, $"Level: {_player.Level}",
+            DrawTextWithShadow(spriteBatch, $"Уровень: {_player.Level}",
                 new Vector2(15, 55), Color.Green);
 
             // Опыт
-            DrawTextWithShadow(spriteBatch, $"XP: {_player.Experience:F0}/{_player.ExperienceToNextLevel:F0}",
+            DrawTextWithShadow(spriteBatch, $"Опыт: {_player.Experience:F0}/{_player.ExperienceToNextLevel:F0}",
                 new Vector2(15, 75), Color.Blue);
 
             DrawProgressBar(spriteBatch, new Vector2(15, 95), 200, 10,
-                _player.Experience / _player.ExperienceToNextLevel, Color.Blue, "XP");
+                _player.Experience / _player.ExperienceToNextLevel, Color.Blue, "Опыт");
 
             // Комбо
             if (_player.ComboCount > 0)
@@ -361,8 +361,8 @@ namespace ComboArena.View
                     DrawTextWithShadow(spriteBatch, comboText, new Vector2(15, comboY), comboColor);
                 }
 
-                var bonusText = $"Damage: +{((_player.ComboDamageMultiplier - 1) * 100):F0}%  " +
-                    $"XP: +{((_player.ComboExperienceMultiplier - 1) * 100):F0}%";
+                var bonusText = $"Урон: +{((_player.ComboDamageMultiplier - 1) * 100):F0}%  " +
+                    $"Опыт: +{((_player.ComboExperienceMultiplier - 1) * 100):F0}%";
                 DrawTextWithShadow(spriteBatch, bonusText, new Vector2(15, comboY + 20), Color.LightGreen);
 
                 // Таймер комбо
@@ -385,7 +385,7 @@ namespace ComboArena.View
                         timerBarWidth + 2, timerBarHeight + 2),
                     Color.Black * 0.5f);
 
-                DrawTextWithShadow(spriteBatch, "Combo Timer",
+                DrawTextWithShadow(spriteBatch, "Таймер комбо",
                     timerBarPosition + new Vector2(timerBarWidth + 10, -2), Color.White * 0.8f);
             }
 
@@ -396,7 +396,7 @@ namespace ComboArena.View
 
             if (perkCount > 0)
             {
-                DrawTextWithShadow(spriteBatch, "Active Perks:", new Vector2(15, perkY), Color.Gold);
+                DrawTextWithShadow(spriteBatch, "Активные улучшения:", new Vector2(15, perkY), Color.Gold);
                 perkY += 20;
                 var shownPerks = 0;
                 foreach (var perk in _player.ActivePerks)
@@ -410,7 +410,7 @@ namespace ComboArena.View
 
             // Счётчик врагов
             var enemyCount = _enemies.Count;
-            var enemyText = $"Enemies: {enemyCount}";
+            var enemyText = $"Враги: {enemyCount}";
             var enemyTextSize = _font.MeasureString(enemyText);
             var enemyTextPosition = new Vector2(viewport.Width - enemyTextSize.X - 20, 15);
             DrawTextWithShadow(spriteBatch, enemyText, enemyTextPosition, Color.Orange);
@@ -419,7 +419,7 @@ namespace ComboArena.View
             if (_levelUpTimer > 0)
             {
                 var levelUpAlpha = Math.Min(_levelUpTimer / LevelUpDuration * 2f, 1f);
-                var levelUpText = "LEVEL UP!";
+                var levelUpText = "НОВЫЙ УРОВЕНЬ!";
                 var levelUpSize = _font.MeasureString(levelUpText);
                 var levelUpPos = new Vector2(
                     (viewport.Width - levelUpSize.X) / 2,
@@ -498,7 +498,7 @@ namespace ComboArena.View
                 Color.White * 0.3f);
 
             // Статус
-            var statusText = ability.IsReady ? "READY" : $"Cooldown: {ability.CurrentCooldown:F1}s";
+            var statusText = ability.IsReady ? "ГОТОВО" : $"Перезарядка: {ability.CurrentCooldown:F1}с";
             var statusColor = ability.IsReady ? Color.Lime : Color.White * 0.7f;
             DrawTextWithShadow(spriteBatch, statusText, new Vector2(x, barY + barHeight + 2), statusColor);
         }
@@ -516,7 +516,7 @@ namespace ComboArena.View
             spriteBatch.Draw(_pixelTexture, background, new Color(0, 0, 0, 180));
 
             // Заголовок
-            const string title = "CHOOSE A PERK";
+            const string title = "ВЫБЕРИТЕ УЛУЧШЕНИЕ";
             var titleSize = _font.MeasureString(title);
             var titlePos = new Vector2((screenWidth - titleSize.X) / 2, screenHeight * 0.1f);
             DrawTextWithShadow(spriteBatch, title, titlePos, Color.Gold);
@@ -566,7 +566,7 @@ namespace ComboArena.View
             }
 
             // Инструкция
-            const string instruction = "Press 1-3 to select a perk";
+            const string instruction = "Нажмите 1-3 для выбора улучшения";
             var instructionSize = _font.MeasureString(instruction);
             var instructionPos = new Vector2(
                 (screenWidth - instructionSize.X) / 2, y + cardHeight + 50);

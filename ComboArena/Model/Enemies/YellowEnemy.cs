@@ -12,7 +12,7 @@
         
         public YellowEnemy(float x, float y)
             : base(x, y,
-                width: 100,
+                width: 143,
                 height: 80,
                 maxHealth: 60,
                 speed: 60,
@@ -28,15 +28,15 @@
             switch (Tier)
             {
                 case EnemyTier.Elite:
-                    InitLaserAbility(damage: 5, range: 300f);
+                    InitLaserAbility(damage: 15, range: 300f);
                     break;
 
                 case EnemyTier.Champion:
-                    InitLaserAbility(damage: 10, range: 400f);
+                    InitLaserAbility(damage: 20, range: 400f);
                     break;
 
                 case EnemyTier.Boss:
-                    InitLaserAbility(damage: 15, range: 500f);
+                    InitLaserAbility(damage: 25, range: 500f);
                     break;
             }
         }

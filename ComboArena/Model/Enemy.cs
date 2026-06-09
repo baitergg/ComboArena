@@ -182,7 +182,9 @@ namespace ComboArena.Model
 
             if (_playerTarget != null && _playerTarget.IsAlive)
             {
-                var toPlayer = _playerTarget.Position - Position;
+                var enemyCenter = GetCenter();
+                var playerCenter = _playerTarget.GetCenter();
+                var toPlayer = playerCenter - enemyCenter;
                 var distance = toPlayer.Length();
 
                 UpdateAbilities(delta, toPlayer, distance);
@@ -294,20 +296,21 @@ namespace ComboArena.Model
 
         public bool IsPlayerInLaser(Player player)
         {
-            var enemyCenter = Position + new Vector2(Width / 2, Height / 2);
-            var playerCenter = player.Position + new Vector2(player.Width / 2, player.Height / 2);
+            var enemyCenter = GetCenter();
+            var playerCenter = player.GetCenter();
             var toPlayer = playerCenter - enemyCenter;
             var distance = toPlayer.Length();
 
             if (distance > LaserRange) return false;
-            if (distance == 0) return false;
+            if (distance < 0.01f) return false;
 
             toPlayer.Normalize();
             var dot = Vector2.Dot(LaserDirection, toPlayer);
+            dot = Math.Clamp(dot, -1f, 1f);
             var angle = (float)Math.Acos(dot);
-            const float laserArc = 0.15f;
+            const float laserArc = 0.5f;
 
-            return Math.Abs(angle) <= laserArc;
+            return angle <= laserArc;
         }
 
         public bool TryApplyLaserHit()

@@ -126,20 +126,20 @@ namespace ComboArena.Model
         {
             return type switch
             {
-                PerkType.DamageUp => ("Damage Up", "Increase attack damage by 20%"),
-                PerkType.AttackSpeedUp => ("Attack Speed", "Reduce attack cooldown by 20%"),
-                PerkType.MaxHealthUp => ("Max Health", "Increase max health by 30%"),
-                PerkType.SpeedUp => ("Speed Up", "Increase movement speed by 15%"),
-                PerkType.RangeUp => ("Range Up", "Increase attack range by 25%"),
-                PerkType.Vampirism => ("Vampirism", "Heal for 10% of damage dealt"),
-                PerkType.ExperienceBoost => ("Experience Boost", "Gain 50% more experience"),
-                PerkType.AbilityFireBurst => ("Fire Burst", "Unleash a fiery explosion dealing 25 AoE damage (E key)"),
-                PerkType.AbilityBarrier => ("Barrier", "Become invulnerable for 2.5s and push enemies away (E key)"),
-                PerkType.FireBurstRadiusUp => ("Fire Burst: Radius+", "Increase Fire Burst radius by 30"),
-                PerkType.FireBurstDamageUp => ("Fire Burst: Damage+", "Increase Fire Burst damage by 15"),
-                PerkType.FireBurstCooldownDown => ("Fire Burst: Faster", "Reduce Fire Burst cooldown by 20%"),
-                PerkType.BarrierDurationUp => ("Barrier: Longer", "Increase Barrier duration by 1s"),
-                PerkType.BarrierCooldownDown => ("Barrier: Faster", "Reduce Barrier cooldown by 20%"),
+                PerkType.DamageUp => ("Урон +", "Увеличивает урон атаки на 20%"),
+                PerkType.AttackSpeedUp => ("Скорость атаки", "Уменьшает перезарядку атаки на 20%"),
+                PerkType.MaxHealthUp => ("Макс. здоровье", "Увеличивает макс. здоровье на 30%"),
+                PerkType.SpeedUp => ("Скорость", "Увеличивает скорость передвижения на 15%"),
+                PerkType.RangeUp => ("Дальность", "Увеличивает дальность атаки на 25%"),
+                PerkType.Vampirism => ("Вампиризм", "Восстанавливает 10% от нанесённого урона"),
+                PerkType.ExperienceBoost => ("Ускорение опыта", "Получайте на 50% больше опыта"),
+                PerkType.AbilityFireBurst => ("Огненный взрыв", "Выпускает огненный взрыв с уроном 25 по площади (клавиша E)"),
+                PerkType.AbilityBarrier => ("Барьер", "Становитесь неуязвимым на 2.5с и отталкивает врагов (клавиша E)"),
+                PerkType.FireBurstRadiusUp => ("Огненный взрыв: Радиус+", "Увеличивает радиус взрыва на 30"),
+                PerkType.FireBurstDamageUp => ("Огненный взрыв: Урон+", "Увеличивает урон взрыва на 15"),
+                PerkType.FireBurstCooldownDown => ("Огненный взрыв: Быстрее", "Уменьшает перезарядку взрыва на 20%"),
+                PerkType.BarrierDurationUp => ("Барьер: Дольше", "Увеличивает длительность барьера на 1с"),
+                PerkType.BarrierCooldownDown => ("Барьер: Быстрее", "Уменьшает перезарядку барьера на 20%"),
                 _ => ("", "")
             };
         }

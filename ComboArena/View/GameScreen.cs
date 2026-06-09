@@ -13,7 +13,8 @@ namespace ComboArena.View
         Playing,
         Paused,
         GameOver,
-        Instructions
+        Instructions,
+        Tutorial
     }
 
     /// <summary>
@@ -45,6 +46,123 @@ namespace ComboArena.View
         private KeyboardState _previousKeyboard;
 
         private int _selectedIndex;
+
+        private int _tutorialPage;
+
+        private static readonly TutorialPage[] TutorialPages =
+        {
+            new TutorialPage
+            {
+                Title = "ДВИЖЕНИЕ",
+                Lines = new[]
+                {
+                    "Используйте клавиши WASD или",
+                    "Стрелки для перемещения",
+                    "персонажа по полю.",
+                    "",
+                    "Двигайтесь, чтобы уклоняться",
+                    "от врагов и собирать",
+                    "предметы."
+                },
+                Icon = "WASD"
+            },
+            new TutorialPage
+            {
+                Title = "АТАКА",
+                Lines = new[]
+                {
+                    "Нажмите ПРОБЕЛ для атаки.",
+                    "",
+                    "Атака имеет перезарядку -",
+                    "следите за индикатором",
+                    "над полоской здоровья."
+                },
+                Icon = "Space"
+            },
+            new TutorialPage
+            {
+                Title = "ОПЫТ И УРОВЕНЬ",
+                Lines = new[]
+                {
+                    "Убивайте врагов, чтобы",
+                    "получать опыт.",
+                    "Из врагов выпадают сферы",
+                    "опыта - подбирайте их.",
+                    "",
+                    "При повышении уровня",
+                    "восстанавливается здоровье."
+                },
+                Icon = "EXP"
+            },
+            new TutorialPage
+            {
+                Title = "УЛУЧШЕНИЯ",
+                Lines = new[]
+                {
+                    "Каждые 3 уровня появляется",
+                    "выбор из 3 улучшений.",
+                    "",
+                    "Нажмите 1, 2 или 3 для",
+                    "выбора улучшения.",
+                    "",
+                    "Улучшения делают персонажа",
+                    "сильнее и выносливее."
+                },
+                Icon = "1-2-3"
+            },
+            new TutorialPage
+            {
+                Title = "СПОСОБНОСТЬ",
+                Lines = new[]
+                {
+                    "Нажмите E для активации",
+                    "особой способности.",
+                    "",
+                    "Способность имеет перезарядку",
+                    "и меняется при получении",
+                    "новых улучшений.",
+                    "",
+                    "Используйте её в критический",
+                    "момент боя."
+                },
+                Icon = "E"
+            },
+            new TutorialPage
+            {
+                Title = "КОМБО",
+                Lines = new[]
+                {
+                    "Убивайте врагов быстро один",
+                    "за другим, чтобы накапливать",
+                    "комбо.",
+                    "",
+                    "Чем выше комбо, тем больше",
+                    "бонусного урона и опыта",
+                    "вы получаете.",
+                    "",
+                    "Комбо сбрасывается, если",
+                    "долго не атаковать."
+                },
+                Icon = "Combo"
+            },
+            new TutorialPage
+            {
+                Title = "ЗДОРОВЬЕ И ПАУЗА",
+                Lines = new[]
+                {
+                    "Собирайте сердечки здоровья,",
+                    "выпадающие из врагов.",
+                    "",
+                    "Нажмите ESCAPE для паузы.",
+                    "В паузе можно продолжить",
+                    "или выйти в главное меню.",
+                    "",
+                    "Не дайте врагам себя окружить",
+                    "и следите за здоровьем!"
+                },
+                Icon = "HP"
+            }
+        };
 
         public void LoadContent(GraphicsDevice graphicsDevice, SpriteFont font, Texture2D menuBackground = null)
         {
@@ -79,13 +197,17 @@ namespace ComboArena.View
             {
                 UpdateInstructions(keyboard);
             }
+            else if (State == ScreenState.Tutorial)
+            {
+                UpdateTutorial(keyboard);
+            }
 
             _previousKeyboard = keyboard;
         }
 
         private void UpdateMainMenu(KeyboardState keyboard)
         {
-            const int itemCount = 4;
+            const int itemCount = 5;
 
             // Навигация вверх/вниз
             if (IsKeyPressed(keyboard, Keys.W) || IsKeyPressed(keyboard, Keys.Up))
@@ -103,14 +225,19 @@ namespace ComboArena.View
                 }
                 else if (_selectedIndex == 1)
                 {
-                    IsFullscreen = !IsFullscreen;
-                    OnFullscreenToggle?.Invoke(IsFullscreen);
+                    _tutorialPage = 0;
+                    State = ScreenState.Tutorial;
                 }
                 else if (_selectedIndex == 2)
                 {
-                    State = ScreenState.Instructions;
+                    IsFullscreen = !IsFullscreen;
+                    OnFullscreenToggle?.Invoke(IsFullscreen);
                 }
                 else if (_selectedIndex == 3)
+                {
+                    State = ScreenState.Instructions;
+                }
+                else if (_selectedIndex == 4)
                 {
                     OnExit?.Invoke();
                 }
@@ -167,6 +294,8 @@ namespace ComboArena.View
                 DrawGameOver(spriteBatch);
             else if (State == ScreenState.Instructions)
                 DrawInstructions(spriteBatch);
+            else if (State == ScreenState.Tutorial)
+                DrawTutorial(spriteBatch);
         }
 
         private void DrawMainMenu(SpriteBatch spriteBatch)
@@ -179,8 +308,8 @@ namespace ComboArena.View
             spriteBatch.Draw(_menuBackground, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.White);
 
             // Пункты меню
-            var menuItems = new[] { "Start Game", IsFullscreen ? "Fullscreen: ON" : "Fullscreen: OFF", "Instructions", "Exit Game" };
-            DrawMenuItems(spriteBatch, menuItems, centerX, centerY - 40, 55);
+            var menuItems = new[] { "Начать игру", "Обучение", IsFullscreen ? "Полный экран: ВКЛ" : "Полный экран: ВЫКЛ", "Управление", "Выйти" };
+            DrawMenuItems(spriteBatch, menuItems, centerX, centerY - 60, 55);
         }
 
         private void DrawPaused(SpriteBatch spriteBatch)
@@ -194,11 +323,11 @@ namespace ComboArena.View
                 new Color(0, 0, 0, 150));
 
             // Заголовок
-            const string title = "PAUSED";
+            const string title = "ПАУЗА";
             DrawCenteredText(spriteBatch, title, centerX, centerY - 100, Color.White, 1.5f);
 
             // Пункты
-            var menuItems = new[] { "Continue", "Exit to Menu" };
+            var menuItems = new[] { "Продолжить", "Выйти в меню" };
             DrawMenuItems(spriteBatch, menuItems, centerX, centerY, 60);
         }
 
@@ -213,11 +342,11 @@ namespace ComboArena.View
                 new Color(0, 0, 0, 150));
 
             // Заголовок
-            const string title = "GAME OVER";
+            const string title = "ИГРА ОКОНЧЕНА";
             DrawCenteredText(spriteBatch, title, centerX, centerY - 100, Color.Red, 1.8f);
 
             // Пункты
-            var menuItems = new[] { "Restart", "Exit to Menu" };
+            var menuItems = new[] { "Заново", "Выйти в меню" };
             DrawMenuItems(spriteBatch, menuItems, centerX, centerY, 60);
         }
 
@@ -275,7 +404,7 @@ namespace ComboArena.View
             spriteBatch.Draw(_pixelTexture, new Rectangle(0, 0, viewport.Width, viewport.Height),
                 new Color(0, 0, 0, 180));
 
-            DrawCenteredText(spriteBatch, "HOW TO PLAY", centerX, 50, Color.Gold, 2.2f);
+            DrawCenteredText(spriteBatch, "КАК ИГРАТЬ", centerX, 40, Color.Gold, 2.0f);
 
             // Три колонки
             var colWidth = viewport.Width / 3f;
@@ -286,69 +415,138 @@ namespace ComboArena.View
                 colWidth * 2 + colWidth / 2f
             };
 
-            const float colStartY = 140f;
-            const float lineSpacing = 38f;
+            const float colStartY = 110f;
+            const float lineSpacing = 36f;
 
-            DrawCenteredText(spriteBatch, "ABOUT", colCenters[0], colStartY, Color.Gold, 1.5f);
+            DrawCenteredText(spriteBatch, "ОБ ИГРЕ", colCenters[0], colStartY, Color.Gold, 1.5f);
             var aboutLines = new[]
             {
-                "Survive waves of enemies",
-                "and defeat them to earn",
-                "experience and level up.",
-                "Every 3 levels, choose",
-                "a perk to upgrade",
-                "your character.",
-                "Build combos by defeating",
-                "enemies quickly for",
-                "bonus damage and XP."
+                "Выживайте среди волн врагов,",
+                "побеждайте их, получайте",
+                "опыт и повышайте уровень.",
+                "Каждые 3 уровня выбирайте",
+                "улучшение для персонажа.",
+                "Стройте комбо, быстро убивая",
+                "врагов - это даёт бонусный",
+                "урон и дополнительный опыт."
             };
-            var y = colStartY + 50f;
+            var y = colStartY + 45f;
             foreach (var line in aboutLines)
             {
-                DrawCenteredText(spriteBatch, line, colCenters[0], y, Color.White, 1.0f);
+                DrawCenteredText(spriteBatch, line, colCenters[0], y, Color.White, 1.1f);
                 y += lineSpacing;
             }
 
-            DrawCenteredText(spriteBatch, "CONTROLS", colCenters[1], colStartY, Color.Gold, 1.5f);
+            DrawCenteredText(spriteBatch, "УПРАВЛЕНИЕ", colCenters[1], colStartY, Color.Gold, 1.5f);
             var controlsLines = new[]
             {
-                "WASD / Arrows  -  Move",
-                "Space  -  Attack",
-                "E  -  Activate ability",
-                "Escape  -  Pause",
-                "1 / 2 / 3  -  Select perk"
+                "WASD / Стрелки - Движение",
+                "Пробел - Атака",
+                "E - Активировать способность",
+                "Escape - Пауза",
+                "1 / 2 / 3 - Выбрать улучшение"
             };
-            y = colStartY + 50f;
+            y = colStartY + 45f;
             foreach (var line in controlsLines)
             {
-                DrawCenteredText(spriteBatch, line, colCenters[1], y, Color.White, 1.0f);
+                DrawCenteredText(spriteBatch, line, colCenters[1], y, Color.White, 1.1f);
                 y += lineSpacing;
             }
 
-            DrawCenteredText(spriteBatch, "TIPS", colCenters[2], colStartY, Color.Gold, 1.5f);
+            DrawCenteredText(spriteBatch, "СОВЕТЫ", colCenters[2], colStartY, Color.Gold, 1.5f);
             var tipsLines = new[]
             {
-                "Collect XP orbs and",
-                "health hearts dropped",
-                "by enemies.",
-                "Choose perks wisely",
-                "to match your playstyle.",
-                "Higher combos =",
-                "more damage and XP."
+                "Собирайте сферы опыта и",
+                "сердечки здоровья, выпадающие",
+                "из поверженных врагов.",
+                "Выбирайте улучшения с умом,",
+                "подстраиваясь под свой стиль.",
+                "Высокое комбо = больше",
+                "урона и опыта."
             };
-            y = colStartY + 50f;
+            y = colStartY + 45f;
             foreach (var line in tipsLines)
             {
-                DrawCenteredText(spriteBatch, line, colCenters[2], y, Color.White, 1.0f);
+                DrawCenteredText(spriteBatch, line, colCenters[2], y, Color.White, 1.1f);
                 y += lineSpacing;
             }
 
-            DrawCenteredText(spriteBatch, "Press ESC, Enter or Space to return", centerX, viewport.Height - 60, Color.LightGray, 1.1f);
+            DrawCenteredText(spriteBatch, "ESC, Enter или Пробел - назад", centerX, viewport.Height - 50, Color.LightGray, 1.1f);
+        }
+
+        private void UpdateTutorial(KeyboardState keyboard)
+        {
+            if (IsKeyPressed(keyboard, Keys.Escape))
+            {
+                State = ScreenState.MainMenu;
+            }
+            else if (IsKeyPressed(keyboard, Keys.Enter) || IsKeyPressed(keyboard, Keys.Space))
+            {
+                if (_tutorialPage < TutorialPages.Length - 1)
+                {
+                    _tutorialPage++;
+                }
+                else
+                {
+                    State = ScreenState.MainMenu;
+                }
+            }
+        }
+
+        private void DrawTutorial(SpriteBatch spriteBatch)
+        {
+            var viewport = spriteBatch.GraphicsDevice.Viewport;
+            var centerX = viewport.Width / 2f;
+
+            // Фон
+            spriteBatch.Draw(_menuBackground, new Rectangle(0, 0, viewport.Width, viewport.Height), Color.White);
+
+            // Затемнитель
+            spriteBatch.Draw(_pixelTexture, new Rectangle(0, 0, viewport.Width, viewport.Height),
+                new Color(0, 0, 0, 180));
+
+            var page = TutorialPages[_tutorialPage];
+
+            DrawCenteredText(spriteBatch, page.Title, centerX, 80, Color.Gold, 2.5f);
+
+            DrawCenteredText(spriteBatch, $"[ {page.Icon} ]", centerX, 160, Color.CornflowerBlue, 1.8f);
+
+            const float textStartY = 240f;
+            const float lineSpacing = 50f;
+            var y = textStartY;
+
+            foreach (var line in page.Lines)
+            {
+                if (string.IsNullOrEmpty(line))
+                {
+                    y += lineSpacing * 0.5f;
+                }
+                else
+                {
+                    DrawCenteredText(spriteBatch, line, centerX, y, Color.White, 1.3f);
+                    y += lineSpacing;
+                }
+            }
+
+            var progressText = $"{_tutorialPage + 1} / {TutorialPages.Length}";
+            DrawCenteredText(spriteBatch, progressText, centerX, viewport.Height - 100, Color.Gray, 1.2f);
+
+            var isLastPage = _tutorialPage == TutorialPages.Length - 1;
+            var hintText = isLastPage ? "Пробел или Enter - завершить" : "Пробел или Enter - далее";
+            DrawCenteredText(spriteBatch, hintText, centerX, viewport.Height - 60, Color.LightGray, 1.1f);
+            DrawCenteredText(spriteBatch, "Escape - в меню", centerX, viewport.Height - 30, Color.LightGray, 0.9f);
         }
 
         private bool IsKeyPressed(KeyboardState current, Keys key)
         {
             return current.IsKeyDown(key) && _previousKeyboard.IsKeyUp(key);
+        }
+
+        private struct TutorialPage
+        {
+            public string Title;
+            public string[] Lines;
+            public string Icon;
         }
     }
 }

@@ -19,7 +19,7 @@ namespace ComboArena.Model
         public float Width { get; }
 
         public float Height { get; }
-
+        
         public bool IsAlive => Health > 0;
 
         protected Vector2 Velocity { get; set; }
@@ -35,7 +35,7 @@ namespace ComboArena.Model
             Width = width;
             Height = height;
             MaxHealth = maxHealth;
-            Health = maxHealth; 
+            Health = maxHealth;
             Speed = speed;
         }
         
@@ -64,17 +64,23 @@ namespace ComboArena.Model
         {
             return new Rectangle((int)Position.X, (int)Position.Y, (int)Width, (int)Height);
         }
-
+        
+        public Vector2 GetCenter()
+        {
+            return new Vector2(Position.X + Width / 2, Position.Y + Height / 2);
+        }
+        
         public Rectangle GetCollisionBounds()
         {
-            var scaledWidth = Width * CollisionScale;
-            var scaledHeight = Height * CollisionScale;
-            var offsetX = (Width - scaledWidth) / 2;
-            var offsetY = (Height - scaledHeight) / 2;
+            var bounds = GetBounds();
+            var scaledWidth = bounds.Width * CollisionScale;
+            var scaledHeight = bounds.Height * CollisionScale;
+            var offsetX = bounds.Width - scaledWidth;
+            var offsetY = bounds.Height - scaledHeight;
 
             return new Rectangle(
-                (int)(Position.X + offsetX),
-                (int)(Position.Y + offsetY),
+                (int)(bounds.X + offsetX / 2),
+                (int)(bounds.Y + offsetY / 2),
                 (int)scaledWidth,
                 (int)scaledHeight
             );

@@ -11,7 +11,7 @@
         
         public RedEnemy(float x, float y)
             : base(x, y,
-                width: 100,
+                width: 143,
                 height: 80,
                 maxHealth: 20,
                 speed: 120,

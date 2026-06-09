@@ -1,4 +1,5 @@
-﻿using ComboArena.Controller;
+﻿using System;
+using ComboArena.Controller;
 using ComboArena.View;
 using Microsoft.Xna.Framework;
 using Microsoft.Xna.Framework.Graphics;
@@ -48,7 +49,7 @@ namespace ComboArena
         protected override void LoadContent()
         {
             _spriteBatch = new SpriteBatch(GraphicsDevice);
-            _font = Content.Load<SpriteFont>("NFPixels");
+            _font = Content.Load<SpriteFont>("DebugFont");
 
             _backgroundTexture = Content.Load<Texture2D>("background_light");
             _menuBackground = Content.Load<Texture2D>("main_menu");
@@ -109,7 +110,7 @@ namespace ComboArena
         {
             GraphicsDevice.Clear(Color.Black);
 
-            if (_gameScreen.State == ScreenState.MainMenu || _gameScreen.State == ScreenState.Instructions)
+            if (_gameScreen.State == ScreenState.MainMenu || _gameScreen.State == ScreenState.Instructions || _gameScreen.State == ScreenState.Tutorial)
             {
                 // Главное меню или экран инструкций
                 _spriteBatch.Begin();
@@ -140,14 +141,20 @@ namespace ComboArena
 
                 // Отрисовка мира с камерой
                 _spriteBatch.Begin(transformMatrix: viewMatrix, samplerState: SamplerState.LinearWrap);
+                
+                var bgTexW = _backgroundTexture.Width;
+                var bgTexH = _backgroundTexture.Height;
+                var startTileX = (int)Math.Floor(visibleLeft / bgTexW) * bgTexW;
+                var startTileY = (int)Math.Floor(visibleTop / bgTexH) * bgTexH;
 
-                var backgroundRect = new Rectangle(
-                    (int)visibleLeft,
-                    (int)visibleTop,
-                    (int)(visibleRight - visibleLeft),
-                    (int)(visibleBottom - visibleTop));
-
-                _spriteBatch.Draw(_backgroundTexture, backgroundRect, backgroundRect, Color.White);
+                for (var tx = startTileX; tx < visibleRight; tx += bgTexW)
+                {
+                    for (var ty = startTileY; ty < visibleBottom; ty += bgTexH)
+                    {
+                        var tileRect = new Rectangle(tx, ty, bgTexW, bgTexH);
+                        _spriteBatch.Draw(_backgroundTexture, tileRect, Color.White);
+                    }
+                }
 
                 _view.Draw(_spriteBatch, gameTime);
                 _spriteBatch.End();

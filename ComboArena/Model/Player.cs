@@ -67,7 +67,7 @@ namespace ComboArena.Model
         private const float AttackVisualDuration = 0.3f;
 
         public Player(float x, float y)
-            : base(x, y, width: 120, height: 100, maxHealth: 100, speed: 200)
+            : base(x, y, width: 172, height: 96, maxHealth: 100, speed: 200)
         {
             FacingDirection = Vector2.UnitX;
             CalculateNextLevelExp();
@@ -145,22 +145,24 @@ namespace ComboArena.Model
 
         public Rectangle GetAttackBounds()
         {
-            var playerCenter = Position + new Vector2(Width / 2, Height / 2);
+            var bounds = GetBounds();
+            var centerY = bounds.Y + bounds.Height / 2f;
 
             int left, right;
             if (FacingDirection.X > 0)
             {
-                left = (int)playerCenter.X;
-                right = (int)(playerCenter.X + AttackRange);
+                left = bounds.X + bounds.Width - 70;
+                right = (int)(left + AttackRange);
             }
             else
             {
-                left = (int)(playerCenter.X - AttackRange);
-                right = (int)playerCenter.X;
+                right = bounds.X + 70;
+                left = (int)(right - AttackRange);
             }
 
-            var top = (int)(playerCenter.Y - Height / 2);
-            var bottom = (int)(playerCenter.Y + Height / 2);
+            var attackHeight = bounds.Height * 0.8f;
+            var top = (int)(centerY - attackHeight / 2);
+            var bottom = (int)(centerY + attackHeight / 2);
             return new Rectangle(left, top, right - left, bottom - top);
         }
         
